@@ -750,96 +750,19 @@ describe('Server Config (config.ts)', () => {
     });
   });
 
-  describe('Model Router with Auth', () => {
-    it('should disable model router by default for oauth-personal', async () => {
-      const config = new Config({
-        ...baseParams,
-        useModelRouter: true,
-      });
-      await config.refreshAuth(AuthType.LOGIN_WITH_GOOGLE);
-      expect(config.getUseModelRouter()).toBe(true);
+  describe('Shell Tool Inactivity Timeout', () => {
+    it('should default to 300000ms (300 seconds) when not provided', () => {
+      const config = new Config(baseParams);
+      expect(config.getShellToolInactivityTimeout()).toBe(300000);
     });
 
-    it('should enable model router by default for other auth types', async () => {
-      const config = new Config({
+    it('should convert provided seconds to milliseconds', () => {
+      const params: ConfigParameters = {
         ...baseParams,
-        useModelRouter: true,
-      });
-      await config.refreshAuth(AuthType.USE_GEMINI);
-      expect(config.getUseModelRouter()).toBe(true);
-    });
-
-    it('should disable model router for specified auth type', async () => {
-      const config = new Config({
-        ...baseParams,
-        useModelRouter: true,
-        disableModelRouterForAuth: [AuthType.USE_GEMINI],
-      });
-      await config.refreshAuth(AuthType.USE_GEMINI);
-      expect(config.getUseModelRouter()).toBe(false);
-    });
-
-    it('should enable model router for other auth type', async () => {
-      const config = new Config({
-        ...baseParams,
-        useModelRouter: true,
-        disableModelRouterForAuth: [],
-      });
-      await config.refreshAuth(AuthType.LOGIN_WITH_GOOGLE);
-      expect(config.getUseModelRouter()).toBe(true);
-    });
-
-    it('should keep model router disabled when useModelRouter is false', async () => {
-      const config = new Config({
-        ...baseParams,
-        useModelRouter: false,
-        disableModelRouterForAuth: [AuthType.USE_GEMINI],
-      });
-      await config.refreshAuth(AuthType.LOGIN_WITH_GOOGLE);
-      expect(config.getUseModelRouter()).toBe(false);
-    });
-
-    it('should keep the user-chosen model after refreshAuth, even when model router is disabled for the auth type', async () => {
-      const config = new Config({
-        ...baseParams,
-        useModelRouter: true,
-        disableModelRouterForAuth: [AuthType.USE_GEMINI],
-      });
-      const chosenModel = 'gemini-1.5-pro-latest';
-      config.setModel(chosenModel);
-
-      await config.refreshAuth(AuthType.USE_GEMINI);
-
-      expect(config.getUseModelRouter()).toBe(false);
-      expect(config.getModel()).toBe(chosenModel);
-    });
-
-    it('should keep the user-chosen model after refreshAuth, when model router is enabled for the auth type', async () => {
-      const config = new Config({
-        ...baseParams,
-        useModelRouter: true,
-        disableModelRouterForAuth: [AuthType.USE_GEMINI],
-      });
-      const chosenModel = 'gemini-1.5-pro-latest';
-      config.setModel(chosenModel);
-
-      await config.refreshAuth(AuthType.LOGIN_WITH_GOOGLE);
-
-      expect(config.getUseModelRouter()).toBe(true);
-      expect(config.getModel()).toBe(chosenModel);
-    });
-
-    it('should NOT switch to auto model if cli provides specific model, even if router is enabled', async () => {
-      const config = new Config({
-        ...baseParams,
-        useModelRouter: true,
-        model: 'gemini-flash-latest',
-      });
-
-      await config.refreshAuth(AuthType.LOGIN_WITH_GOOGLE);
-
-      expect(config.getUseModelRouter()).toBe(true);
-      expect(config.getModel()).toBe('gemini-flash-latest');
+        shellToolInactivityTimeout: 10, // 10 seconds
+      };
+      const config = new Config(params);
+      expect(config.getShellToolInactivityTimeout()).toBe(10000);
     });
   });
 
@@ -1707,5 +1630,44 @@ describe('Config setExperiments logging', () => {
     expect(loggedSummary).not.toContain('int32ListLength: 0');
 
     debugSpy.mockRestore();
+  });
+});
+
+describe('Availability Service Integration', () => {
+  const baseModel = 'test-model';
+  const baseParams: ConfigParameters = {
+    sessionId: 'test',
+    targetDir: '.',
+    debugMode: false,
+    model: baseModel,
+    cwd: '.',
+  };
+
+  it('setActiveModel updates active model and emits event', async () => {
+    const config = new Config(baseParams);
+    const model1 = 'model1';
+    const model2 = 'model2';
+
+    config.setActiveModel(model1);
+    expect(config.getActiveModel()).toBe(model1);
+    expect(mockCoreEvents.emitModelChanged).toHaveBeenCalledWith(model1);
+
+    config.setActiveModel(model2);
+    expect(config.getActiveModel()).toBe(model2);
+    expect(mockCoreEvents.emitModelChanged).toHaveBeenCalledWith(model2);
+  });
+
+  it('getActiveModel defaults to configured model if not set', () => {
+    const config = new Config(baseParams);
+    expect(config.getActiveModel()).toBe(baseModel);
+  });
+
+  it('resetTurn delegates to availability service', () => {
+    const config = new Config(baseParams);
+    const service = config.getModelAvailabilityService();
+    const spy = vi.spyOn(service, 'resetTurn');
+
+    config.resetTurn();
+    expect(spy).toHaveBeenCalled();
   });
 });
