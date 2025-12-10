@@ -237,6 +237,7 @@ function createMockConfig(overrides: Partial<Config> = {}): Config {
     getUsageStatisticsEnabled: () => true,
     getDebugMode: () => false,
     isInteractive: () => true,
+    isA2ARequest: () => false,
     getApprovalMode: () => ApprovalMode.DEFAULT,
     setApprovalMode: () => {},
     getAllowedTools: () => [],

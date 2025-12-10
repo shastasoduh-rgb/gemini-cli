@@ -82,6 +82,7 @@ const mockConfig = {
   getMessageBus: () => null,
   getPolicyEngine: () => null,
   isInteractive: () => false,
+  isA2ARequest: () => false,
   getExperiments: () => {},
   getEnableHooks: () => false,
 } as unknown as Config;
@@ -494,15 +495,15 @@ describe('useReactToolScheduler', () => {
 
   it('should handle tool requiring confirmation - approved', async () => {
     mockToolRegistry.getTool.mockReturnValue(mockToolRequiresConfirmation);
-    const config = createMockConfigOverride({
-      isInteractive: () => true,
-    });
     const expectedOutput = 'Confirmed output';
     (mockToolRequiresConfirmation.execute as Mock).mockResolvedValue({
       llmContent: expectedOutput,
       returnDisplay: 'Confirmed display',
     } as ToolResult);
 
+    const config = createMockConfigOverride({
+      isInteractive: () => true,
+    });
     const { result } = renderScheduler(config);
     const schedule = result.current[1];
     const request: ToolCallRequestInfo = {

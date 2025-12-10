@@ -872,7 +872,7 @@ export class CoreToolScheduler {
             );
             this.setStatusInternal(reqInfo.callId, 'scheduled', signal);
           } else {
-            if (!this.config.isInteractive()) {
+            if (!this.config.isA2ARequest() && !this.config.isInteractive()) {
               throw new Error(
                 `Tool execution for "${
                   toolCall.tool.displayName || toolCall.tool.name
