@@ -1335,6 +1335,7 @@ describe('startInteractiveUI', () => {
         workspaceRoot,
         resumedSessionData,
         initializationResult,
+        'unknown',
       );
     });
   }

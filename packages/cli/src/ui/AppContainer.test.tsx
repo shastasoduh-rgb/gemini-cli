@@ -203,6 +203,7 @@ describe('AppContainer State Management', () => {
         initializationResult={initResult}
         startupWarnings={startupWarnings}
         resumedSessionData={resumedSessionData}
+        terminalBackground="unknown"
       />
     </SettingsContext.Provider>
   );

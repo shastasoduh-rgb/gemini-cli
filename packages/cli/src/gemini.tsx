@@ -98,6 +98,10 @@ import { requestConsentNonInteractive } from './config/extensions/consent.js';
 import { ScrollProvider } from './ui/contexts/ScrollProvider.js';
 import { isAlternateBufferEnabled } from './ui/hooks/useAlternateBuffer.js';
 
+import {
+  detectTerminalBackgroundColor,
+  type TerminalBackgroundType,
+} from './ui/utils/terminalColorDetector.js';
 import { profiler } from './ui/components/DebugProfiler.js';
 
 const SLOW_RENDER_MS = 200;
@@ -179,6 +183,7 @@ export async function startInteractiveUI(
   workspaceRoot: string = process.cwd(),
   resumedSessionData: ResumedSessionData | undefined,
   initializationResult: InitializationResult,
+  terminalBackground: TerminalBackgroundType,
 ) {
   // Never enter Ink alternate buffer mode when screen reader mode is enabled
   // as there is no benefit of alternate buffer mode when using a screen reader
@@ -234,6 +239,7 @@ export async function startInteractiveUI(
                     version={version}
                     resumedSessionData={resumedSessionData}
                     initializationResult={initializationResult}
+                    terminalBackground={terminalBackground}
                   />
                 </VimModeProvider>
               </SessionStatsProvider>
@@ -512,6 +518,7 @@ export async function main() {
     }
 
     const wasRaw = process.stdin.isRaw;
+    let terminalBackground: TerminalBackgroundType = 'unknown';
     if (config.isInteractive() && !wasRaw && process.stdin.isTTY) {
       // Set this as early as possible to avoid spurious characters from
       // input showing up in the output.
@@ -539,11 +546,16 @@ export async function main() {
 
       // Detect and enable Kitty keyboard protocol once at startup.
       await detectAndEnableKittyProtocol();
+      terminalBackground = await detectTerminalBackgroundColor();
     }
 
     setMaxSizedBoxDebugging(isDebugMode);
     const initAppHandle = startupProfiler.start('initialize_app');
-    const initializationResult = await initializeApp(config, settings);
+    const initializationResult = await initializeApp(
+      config,
+      settings,
+      terminalBackground,
+    );
     initAppHandle?.end();
 
     if (
@@ -596,6 +608,7 @@ export async function main() {
         process.cwd(),
         resumedSessionData,
         initializationResult,
+        terminalBackground,
       );
       return;
     }

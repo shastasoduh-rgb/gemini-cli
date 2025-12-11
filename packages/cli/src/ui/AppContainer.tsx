@@ -127,6 +127,7 @@ import { enableSupportedProtocol } from './utils/kittyProtocolDetector.js';
 import { useInputHistoryStore } from './hooks/useInputHistoryStore.js';
 import { enableBracketedPaste } from './utils/bracketedPaste.js';
 import { useBanner } from './hooks/useBanner.js';
+import type { TerminalBackgroundType } from './utils/terminalColorDetector.js';
 
 const WARNING_PROMPT_DURATION_MS = 1000;
 const QUEUE_ERROR_DISPLAY_DURATION_MS = 3000;
@@ -148,6 +149,7 @@ interface AppContainerProps {
   version: string;
   initializationResult: InitializationResult;
   resumedSessionData?: ResumedSessionData;
+  terminalBackground: TerminalBackgroundType;
 }
 
 /**
@@ -1524,6 +1526,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       warningMessage,
       bannerData,
       bannerVisible,
+      terminalBackgroundColor: props.terminalBackground,
     }),
     [
       isThemeDialogOpen,
@@ -1615,6 +1618,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       warningMessage,
       bannerData,
       bannerVisible,
+      props.terminalBackground,
     ],
   );
 

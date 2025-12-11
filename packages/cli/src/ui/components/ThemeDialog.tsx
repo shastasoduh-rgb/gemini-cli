@@ -22,6 +22,7 @@ import { useKeypress } from '../hooks/useKeypress.js';
 import { useAlternateBuffer } from '../hooks/useAlternateBuffer.js';
 import { ScopeSelector } from './shared/ScopeSelector.js';
 import { useUIActions } from '../contexts/UIActionsContext.js';
+import { useUIState } from '../contexts/UIStateContext.js';
 
 interface ThemeDialogProps {
   /** Callback function when a theme is selected */
@@ -48,6 +49,7 @@ export function ThemeDialog({
 }: ThemeDialogProps): React.JSX.Element {
   const isAlternateBuffer = useAlternateBuffer();
   const { refreshStatic } = useUIActions();
+  const { terminalBackgroundColor } = useUIState();
   const [selectedScope, setSelectedScope] = useState<LoadableSettingScope>(
     SettingScope.User,
   );
@@ -69,18 +71,26 @@ export function ThemeDialog({
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   // Generate theme items
   const themeItems = [
-    ...builtInThemes.map((theme) => ({
-      label: theme.name,
-      value: theme.name,
-      themeNameDisplay: theme.name,
-      themeTypeDisplay: capitalize(theme.type),
-      key: theme.name,
-    })),
+    ...builtInThemes.map((theme) => {
+      const isCompatible =
+        terminalBackgroundColor === 'unknown' ||
+        theme.type === 'ansi' ||
+        theme.type === terminalBackgroundColor;
+      return {
+        label: theme.name,
+        value: theme.name,
+        themeNameDisplay: theme.name,
+        themeTypeDisplay: capitalize(theme.type),
+        themeWarning: isCompatible ? '' : ' (Incompatible)',
+        key: theme.name,
+      };
+    }),
     ...customThemeNames.map((name) => ({
       label: name,
       value: name,
       themeNameDisplay: name,
       themeTypeDisplay: 'Custom',
+      themeWarning: '',
       key: name,
     })),
   ];
@@ -225,6 +235,34 @@ export function ThemeDialog({
               maxItemsToShow={12}
               showScrollArrows={true}
               showNumbers={mode === 'theme'}
+              renderItem={(item, { titleColor }) => {
+                // We know item has themeWarning because we put it there, but we need to cast or access safely
+                const itemWithWarning = item as typeof item & {
+                  themeWarning?: string;
+                };
+
+                if (item.themeNameDisplay && item.themeTypeDisplay) {
+                  return (
+                    <Text color={titleColor} wrap="truncate" key={item.key}>
+                      {item.themeNameDisplay}{' '}
+                      <Text color={theme.text.secondary}>
+                        {item.themeTypeDisplay}
+                      </Text>
+                      {itemWithWarning.themeWarning && (
+                        <Text color={theme.status.warning}>
+                          {itemWithWarning.themeWarning}
+                        </Text>
+                      )}
+                    </Text>
+                  );
+                }
+                // Regular label display
+                return (
+                  <Text color={titleColor} wrap="truncate">
+                    {item.label}
+                  </Text>
+                );
+              }}
             />
           </Box>
 
